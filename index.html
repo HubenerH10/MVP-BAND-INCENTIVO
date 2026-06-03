@@ -164,7 +164,7 @@
   .score-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; }
   .score-card.vitoria::before { background:#22c55e; }
   .score-card.empate::before  { background:var(--c-gold); }
-  .score-card.blowout::before { background:var(--c-red); }
+  .score-card.goleada::before { background:var(--c-red); }
   .score-card.b2b::before     { background:#60a5fa; }
   .score-pts {
     font-family:'Barlow Condensed',sans-serif; font-weight:900;
@@ -172,7 +172,7 @@
   }
   .score-card.vitoria .score-pts { color:#22c55e; }
   .score-card.empate  .score-pts { color:var(--c-gold); }
-  .score-card.blowout .score-pts { color:var(--c-red); }
+  .score-card.goleada .score-pts { color:var(--c-red); }
   .score-card.b2b     .score-pts { color:#60a5fa; }
   .score-label {
     font-family:'Barlow Condensed',sans-serif; font-weight:800;
@@ -584,9 +584,9 @@
       <div class="score-label">Empate</div>
       <div class="score-cond">Entre 90% e 100%</div>
     </div>
-    <div class="score-card blowout">
+    <div class="score-card goleada">
       <div class="score-pts">5</div>
-      <div class="score-label">Blowout 🔥</div>
+      <div class="score-label">Goleada 🔥</div>
       <div class="score-cond">Acima de 105%</div>
     </div>
     <div class="score-card b2b">
@@ -605,7 +605,7 @@
       <div style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:13px;text-transform:uppercase;letter-spacing:1.5px;color:var(--c-gold);margin-bottom:8px;">Meses 2, 3 e 4 — Ligas</div>
       <div style="font-size:13px;color:rgba(255,255,255,0.7);line-height:1.6;">
         <strong style="color:var(--c-white);">Liga NBA:</strong> 5 pts por mês<br>
-        <strong style="color:var(--c-white);">Liga NBB:</strong> 6 pts por mês<br>
+        <strong style="color:var(--c-white);">Liga NBB:</strong> 4 pts por mês<br>
         Top 3 de cada liga nos meses 2 e 3 → All Star Games<br>
         <span style="color:var(--c-text-muted);font-size:11px;">Ganhadores do All Star ganham +5 pontos</span>
       </div>
@@ -635,8 +635,15 @@
   </div>
 
   <div class="gatilho-box">
-    <div class="gatilho-box-title">⚡ Gatilho de Participação</div>
-    <p>Para entrar no jogo, GC e Rota precisam atingir <strong style="color:#86efac;">≥ 95% de Volume de Refri</strong>. Esse é o passaporte para a competição!</p>
+    <div class="gatilho-box-title">⚡ Gatilhos de Participação</div>
+    <p style="margin-bottom:10px;"><strong style="color:#86efac;">Gatilho 1 — Volume Refri:</strong> ≥ 95% de Volume de Refrigerantes total vs meta. Válido para todos os cargos comerciais.</p>
+    <p><strong style="color:#86efac;">Gatilho 2 — Pontuação mínima quadrimestral:</strong><br>
+    <span style="display:inline-flex;flex-wrap:wrap;gap:8px;margin-top:6px;">
+      <span style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.25);border-radius:6px;padding:4px 10px;font-size:12px;">GC/SV Misto: 80 pts</span>
+      <span style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.25);border-radius:6px;padding:4px 10px;font-size:12px;">GC/SV Seg.: 60 pts</span>
+      <span style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.25);border-radius:6px;padding:4px 10px;font-size:12px;">RT Mista: 18 pts/mês</span>
+      <span style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.25);border-radius:6px;padding:4px 10px;font-size:12px;">RT Seg.: 15 pts/mês</span>
+    </span></p>
   </div>
 
   <div class="pilares-table" style="margin-bottom:32px;">
@@ -653,7 +660,7 @@
       <tbody>
         <tr>
           <td><div class="pilar-num">1</div></td>
-          <td>Cobertura Sprite</td>
+          <td>Volume Sprite</td>
           <td>Volume Sprite</td>
           <td>Cobertura Sprite</td>
           <td>Volume Sprite</td>
@@ -676,7 +683,7 @@
           <td><div class="pilar-num">4</div></td>
           <td>Cob. DV Frut</td>
           <td>Volume Sucos</td>
-          <td>Cobertura Kapo</td>
+          <td>Cob. DV Frut</td>
           <td>Volume Sucos</td>
         </tr>
         <tr>
