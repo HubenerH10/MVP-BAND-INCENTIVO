@@ -22,12 +22,8 @@ canvas#confetti{position:fixed;inset:0;z-index:20;pointer-events:none;display:no
 #sound-btn{background:rgba(244,180,0,.12);border:1px solid rgba(244,180,0,.3);border-radius:20px;padding:6px 14px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;letter-spacing:1px;color:#F4B400;-webkit-appearance:none}
 #sound-btn:active{background:rgba(244,180,0,.25)}
 #slide-counter{position:fixed;bottom:22px;right:16px;z-index:200;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;color:rgba(255,255,255,.3);letter-spacing:2px}
-.nav-arrow{position:fixed;bottom:18px;z-index:200;background:rgba(244,180,0,.15);border:1px solid rgba(244,180,0,.3);border-radius:50%;width:46px;height:46px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#F4B400;font-size:20px;-webkit-appearance:none;touch-action:manipulation;user-select:none;overflow:hidden;transition:border-color .2s}
+.nav-arrow{position:fixed;bottom:18px;z-index:200;background:rgba(244,180,0,.15);border:1px solid rgba(244,180,0,.3);border-radius:50%;width:46px;height:46px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#F4B400;font-size:20px;-webkit-appearance:none;touch-action:manipulation;user-select:none}
 .nav-arrow:active{background:rgba(244,180,0,.3)}
-.nav-arrow.locked{border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.3)}
-.nav-arrow .hold-ring{position:absolute;inset:0;border-radius:50%;border:3px solid transparent;transition:none}
-.nav-arrow.holding .hold-ring{border-color:var(--gold,#F4B400);animation:holdFill 2s linear forwards}
-@keyframes holdFill{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0% 0 0)}}
 #nav-prev{left:calc(50% - 54px)}
 #nav-next{left:calc(50% + 8px)}
 /* SLIDES */
@@ -257,16 +253,8 @@ canvas#confetti{position:fixed;inset:0;z-index:20;pointer-events:none;display:no
 </div>
 <div id="nav-dots"></div>
 <div id="slide-counter"></div>
-<button class="nav-arrow" id="nav-prev"
-  onmousedown="startHold(-1,this)" onmouseup="cancelHold(this)" onmouseleave="cancelHold(this)"
-  ontouchstart="startHold(-1,this)" ontouchend="cancelHold(this)">
-  <div class="hold-ring"></div>&#8592;
-</button>
-<button class="nav-arrow" id="nav-next"
-  onmousedown="startHold(1,this)" onmouseup="cancelHold(this)" onmouseleave="cancelHold(this)"
-  ontouchstart="startHold(1,this)" ontouchend="cancelHold(this)">
-  <div class="hold-ring"></div>&#8594;
-</button>
+<button class="nav-arrow" id="nav-prev" onclick="navigate(-1)">&#8592;</button>
+<button class="nav-arrow" id="nav-next" onclick="navigate(1)">&#8594;</button>
 
 <!-- S0 FLASH -->
 <div class="slide" id="s0"><div class="intro-flash">MVP BAND</div></div>
@@ -787,31 +775,20 @@ const slideSounds = [
   () => playTransition('whistle'),   // 5 pilares
   () => playTransition('fanfare'),   // 6 svs
   () => playTransition('whistle'),   // 7 rotas
-  // 8: Finale — narração termina, depois fogos e torcida
+  // 8: Finale — narration done, crowd full blast + fireworks
   () => {
-    // Para qualquer narração anterior imediatamente
-    stopNarration();
-    navLocked = false;
-    // Pequena pausa dramática, depois fanfarra + torcida + fogos em sequência
+    if (crowdGain) {
+      crowdGain.gain.setTargetAtTime(0.9, AC.currentTime, 0.5);
+    } else {
+      startCrowd();
+      setTimeout(() => { if (crowdGain) crowdGain.gain.setTargetAtTime(0.9, AC.currentTime, 0.3); }, 400);
+    }
+    playBuf(BUFS.fanfare, 0.9);
+    setTimeout(() => playBuf(BUFS.fanfare, 0.75), 1300);
     setTimeout(() => {
-      // Fanfarra de abertura
-      playBuf(BUFS.fanfare, 0.9);
-      // Torcida sobe gradualmente
-      if (crowdGain) {
-        crowdGain.gain.setTargetAtTime(0.7, AC.currentTime, 0.8);
-        setTimeout(() => { if(crowdGain) crowdGain.gain.setTargetAtTime(1.0, AC.currentTime, 1.0); }, 1500);
-      } else {
-        startCrowd();
-        setTimeout(() => { if(crowdGain) crowdGain.gain.setTargetAtTime(1.0, AC.currentTime, 1.0); }, 500);
-      }
-      // Segunda fanfarra depois de 1.5s
-      setTimeout(() => playBuf(BUFS.fanfare, 0.85), 1500);
-      // Fogos começam depois da fanfarra (2s)
-      setTimeout(() => {
-        launchFireworks();
-        launchConfetti();  // confetti junto com os fogos
-      }, 2000);
-    }, 600);   // 600ms de pausa dramática antes de tudo começar
+      if (crowdGain) crowdGain.gain.setTargetAtTime(1.0, AC.currentTime, 0.2);
+    }, 500);
+    launchFireworks();
   },
 ];
 
@@ -837,71 +814,18 @@ function showSlide(n, silent) {
   document.getElementById('progress-bar').style.width = pct+'%';
   document.querySelectorAll('.ndot').forEach((d,i) => d.classList.toggle('active', i===n-1));
   document.getElementById('slide-counter').textContent = n>0 ? n+' / '+(TOTAL-1) : '';
-  // Confetti lançado pelo slideSounds[8] para controle de timing
+  if (n===TOTAL-1) setTimeout(launchConfetti, 600);
   document.getElementById('nav-prev').style.opacity = n<=1?'0':'1';
   document.getElementById('nav-next').style.opacity = n>=TOTAL-1?'0':'1';
 }
 
-// Tempo mínimo para segurar e forçar avanço (ms)
-const FORCE_SKIP_MS = 2000;
-let navHoldTimer = null;
-let navLocked = false; // true enquanto narração está tocando
-
 function navigate(dir) {
   const n = Math.max(1, Math.min(TOTAL-1, current+dir));
-  if (n === current) return;
-  // Se narração está tocando, bloqueia navegação normal
-  if (navLocked && !autoplayMode) {
-    // Usuário precisa segurar o botão por 2s para forçar
-    return;
-  }
-  stopNarration();   // para o áudio anterior imediatamente
-  narrEndCallback = null;
-  navLocked = false;
-  showSlide(n);
-}
-
-// Versão "forçar" — chamada após segurar 2s
-function navigateForce(dir) {
-  const n = Math.max(1, Math.min(TOTAL-1, current+dir));
-  if (n === current) return;
-  stopNarration();
-  narrEndCallback = null;
-  navLocked = false;
-  showSlide(n);
+  if (n !== current) showSlide(n);
 }
 
 function resetA(el) { el.querySelectorAll('[class*="anim-"]').forEach(e => e.classList.remove('go')); }
 function triggerA(el) { el.querySelectorAll('[class*="anim-"]').forEach(e => e.classList.add('go')); }
-
-/* ── HOLD-TO-SKIP navigation ── */
-function startHold(dir, btn) {
-  if (!navLocked) {
-    // Not locked — navigate immediately
-    navigateForce(dir);
-    return;
-  }
-  // Locked — show hold indicator, navigate after 2s
-  btn.classList.add('holding', 'locked');
-  navHoldTimer = setTimeout(() => {
-    navigateForce(dir);
-    btn.classList.remove('holding', 'locked');
-  }, FORCE_SKIP_MS);
-}
-
-function cancelHold(btn) {
-  clearTimeout(navHoldTimer);
-  btn.classList.remove('holding', 'locked');
-}
-
-function setNavLock(locked) {
-  navLocked = locked;
-  // Visual feedback on arrows
-  ['nav-prev','nav-next'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.classList.toggle('locked', locked);
-  });
-}
 
 /* dots */
 const dotsEl = document.getElementById('nav-dots');
@@ -912,18 +836,9 @@ for (let i=1; i<TOTAL; i++) {
 
 /* keyboard */
 document.addEventListener('keydown', e => {
-  if (['ArrowRight','ArrowDown',' '].includes(e.key)) {
-    e.preventDefault();
-    if (!navLocked) navigate(1);
-    // Tecla não faz nada se narração está tocando — usuário deve esperar
-  }
-  if (['ArrowLeft','ArrowUp'].includes(e.key)) {
-    e.preventDefault();
-    if (!navLocked) navigate(-1);
-  }
+  if (['ArrowRight','ArrowDown',' '].includes(e.key)) { e.preventDefault(); navigate(1); }
+  if (['ArrowLeft','ArrowUp'].includes(e.key)) { e.preventDefault(); navigate(-1); }
   if (e.key==='m'||e.key==='M') toggleSound();
-  // Tecla Escape força skip (para quem precisar)
-  if (e.key==='Escape') { stopNarration(); navLocked=false; }
 });
 
 /* swipe */
@@ -931,10 +846,7 @@ let tx=0, ty=0;
 document.addEventListener('touchstart', e=>{ tx=e.touches[0].clientX; ty=e.touches[0].clientY; }, {passive:true});
 document.addEventListener('touchend', e=>{
   const dx=e.changedTouches[0].clientX-tx, dy=e.changedTouches[0].clientY-ty;
-  if (Math.abs(dx)>Math.abs(dy) && Math.abs(dx)>45) {
-    if (!navLocked) navigate(dx<0?1:-1);
-    // Swipe ignorado durante narração — deve esperar terminar
-  }
+  if (Math.abs(dx)>Math.abs(dy) && Math.abs(dx)>45) navigate(dx<0?1:-1);
 }, {passive:true});
 
 /* particles */
@@ -1038,19 +950,17 @@ function speak(slideNum) {
     const src  = AC.createBufferSource();
     const gain = AC.createGain();
     src.buffer = narrBuffers[slideNum];
-    gain.gain.value = 1.5;   // narrador mais alto (era 0.92)
+    gain.gain.value = 0.92;
     src.connect(gain);
     gain.connect(masterGain);
     src.onended = () => {
       currentNarrSrc = null;
       currentNarrGain = null;
-      setNavLock(false);   // libera navegação quando narração termina
       if (narrEndCallback) { narrEndCallback(); narrEndCallback = null; }
     };
     src.start(AC.currentTime);
     currentNarrSrc  = src;
     currentNarrGain = gain;
-    setNavLock(true);   // trava navegação durante narração
   } catch(e) { console.warn('Narration play error:', e); }
 }
 
@@ -1061,7 +971,6 @@ function stopNarration() {
     currentNarrSrc = null;
     currentNarrGain = null;
   }
-  setNavLock(false);   // garante que lock é liberado ao parar narração
 }
 
 function startAutoplay() {
